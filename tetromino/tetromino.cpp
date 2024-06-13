@@ -30,6 +30,8 @@ const DWORD RIGHT_PRESSED = 1 << 2;
 
 const DWORD ROTATE_PRESSED = 1 << 3;
 
+const DWORD PAUSE_PRESSED = 1 << 4;
+
 DWORD GetKeyState()
 {
 
@@ -53,6 +55,9 @@ DWORD GetKeyState()
         }
         if (state.Gamepad.wButtons & (XINPUT_GAMEPAD_DPAD_UP | XINPUT_GAMEPAD_A)) {
             result |= ROTATE_PRESSED;
+        }
+        if (state.Gamepad.wButtons & XINPUT_GAMEPAD_START) {
+            result |= PAUSE_PRESSED;
         }
     }
     return result;
@@ -254,13 +259,15 @@ int main()
 
     int score = 0;
 
+    bool paused = false;
+
     DWORD keyHoldState = 0;
 
     while (!bGameOver)
     {
         DWORD keyState = GetKeyState();
 
-        for (int shift = 0; shift < 4; shift += 1)
+        for (int shift = 0; shift < 5; shift += 1)
         {
             bool pressed = (1 << shift) & keyState;
             bool hold = (1 << shift) & keyHoldState;
@@ -271,14 +278,14 @@ int main()
             else if (hold && !pressed)
             {
                 keyHoldState &= ~(1 << shift);
-                OutputDebugString(L"released\n");
             }
             else if (pressed)
             {
                 keyHoldState |= 1 << shift;
-                OutputDebugString(L"pressed\n");
             }
         }
+
+        
 
         if (keyState & LEFT_PRESSED)
         {
@@ -315,7 +322,12 @@ int main()
 
         }
 
-        if (timer.ForTimeSlice(20))
+        if (keyState & PAUSE_PRESSED)
+        {
+            paused = !paused;
+        }
+
+        if (timer.ForTimeSlice(20) && !paused)
         {
             if (DoesPieceFit(nCurrentPiece, nCurrentRotation, nCurrentX, nCurrentY + 1))
             {
